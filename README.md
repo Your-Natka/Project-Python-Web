@@ -6,6 +6,8 @@ app/
 ├── core/
 │   ├── config.py
 │   └── security.py
+├── crud/
+│   ├── user.py
 ├── db/
 │   ├── base.py
 │   └── session.py
