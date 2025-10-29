@@ -1,0 +1,31 @@
+version: "3.8"
+services:
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:password@db:5432/photoshare
+      - REDIS_URL=redis://redis:6379/0
+      - CLOUDINARY_URL=cloudinary://API_KEY:API_SECRET@CLOUD_NAME
+      - SECRET_KEY=supersecret
+    depends_on:
+      - db
+      - redis
+
+  db:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: photoshare
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7
+    restart: always
+
+volumes:
+  pgdata:

@@ -1,0 +1,41 @@
+[tool.poetry]
+name = "my_fastapi_project"
+version = "0.1.0"
+description = "FastAPI project with PostgreSQL, JWT auth, Cloudinary, Redis, Celery, QR codes"
+authors = ["Natalia Bodnarcuk <youremail@example.com>"]
+readme = "README.md"
+license = "MIT"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.111.1"
+uvicorn = {extras = ["standard"], version = "^0.23.2"}
+sqlalchemy = "^2.0.21"
+alembic = "^2.0.3"
+asyncpg = "^1.0.0"
+psycopg2-binary = "^2.9.7"
+python-jose = {extras = ["cryptography"], version = "^3.3.0"}
+passlib = {extras = ["bcrypt"], version = "^1.8.2"}
+bcrypt = "^4.0.1"
+python-multipart = "^0.0.6"
+email-validator = "^2.1.0"
+cloudinary = "^1.31.0"
+pillow = "^10.0.0"
+python-dotenv = "^1.0.0"
+loguru = "^0.7.0"
+requests = "^2.32.0"
+qrcode = "^7.4.2"
+redis = "^5.3.7"
+celery = "^5.5.2"
+
+[tool.poetry.dev-dependencies]
+pytest = "^7.4.0"
+pytest-asyncio = "^0.21.0"
+httpx = "^1.4.2"
+black = "^24.3.0"
+isort = "^6.0.0"
+mypy = "^1.5.1"
+
+[build-system]
+requires = ["poetry-core>=1.5.0"]
+build-backend = "poetry.core.masonry.api"
