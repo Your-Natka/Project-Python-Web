@@ -1,10 +1,10 @@
-from pydantic import BaseSettings
+from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "My FastAPI Project"
     POSTGRES_USER: str = "postgres"
     POSTGRES_PASSWORD: str = "password"
-    POSTGRES_SERVER: str = "localhost"
+    POSTGRES_SERVER: str = "db"
     POSTGRES_PORT: str = "5432"
     POSTGRES_DB: str = "mydatabase"
     SECRET_KEY: str = "supersecretkey"
