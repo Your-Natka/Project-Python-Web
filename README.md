@@ -407,3 +407,16 @@ docker-compose up -d --build
 docker ps
 
 docker-compose logs -f web
+
+Коли попрацювали і зробили якісь зміни і нам треба зробити PR то ми виконуємо крок покрокові:
+
+1. git add .
+2. git commit -m '...(Тут буде назва вашого коментаря)'
+3. git push
+4. git push origin (назва вашої гілки)
+5. Переходимо на гілку девелопер
+git checkout developer
+6. git merge --no-ff (назва вашої гілки) -m '...(Короткий опис PR)'
+7. git push origin developer
+8. Виходимо віртуального середовища за допомогою команди: deactivate
+
