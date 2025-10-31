@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.api import users
+from app.api.routers import users
 from app.core.config import settings
 from app.db.session import engine
 from app.db.base import Base

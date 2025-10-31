@@ -386,3 +386,24 @@ app/tests/test_comments.py
 app/tests/test_ratings.py
 
 Тестує виставлення рейтингу, обмеження “1 раз на користувача”, середнє значення.
+
+
+
+### Як запустити додаток:
+
+Створюємо віртуальне середовище.
+
+python3 -m venv .venv
+source .venv/bin/activate   # для Linux / Mac
+
+# або
+.venv\Scripts\activate      # для Windows PowerShell
+
+Встановлюємо бібліотеки
+pip install -r requirements.txt
+
+# Запусти контейнер
+docker-compose up -d --build
+docker ps
+
+docker-compose logs -f web
