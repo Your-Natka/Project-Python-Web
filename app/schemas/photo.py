@@ -1,5 +1,5 @@
 from pydantic import BaseModel, field_validator
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 
 MAX_TAGS = 5
 MAX_TAG_LENGTH = 50
@@ -51,6 +51,16 @@ class PhotoOut(PhotoBase):
     tags: List[str] = []
     created_at: str
     updated_at: str
+
+    class Config:
+        orm_mode = True
+
+
+# Схема для трансформованого фото + QR
+class PhotoTransformOut(BaseModel):
+    url: str
+    qr_code_url: str
+    transformation_params: Dict[str, Any]
 
     class Config:
         orm_mode = True
