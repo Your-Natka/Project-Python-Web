@@ -53,7 +53,7 @@ class PhotoOut(PhotoBase):
     updated_at: str
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # Схема для трансформованого фото + QR
@@ -63,4 +63,4 @@ class PhotoTransformOut(BaseModel):
     transformation_params: Dict[str, Any]
 
     class Config:
-        orm_mode = True
+        from_attributes = True
