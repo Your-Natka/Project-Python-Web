@@ -67,3 +67,5 @@ alembic/
 .DS_Store
 Thumbs.db
 
+/venv311/Include/site/python3.11/greenlet
+/venv311

@@ -4,48 +4,48 @@
 app/
 ├── main.py
 ├── core/
-│   ├── config.py
-│   └── security.py
+│ ├── config.py
+│ └── security.py
 ├── crud/
-│   ├── user.py
+│ ├── user.py
 ├── db/
-│   ├── base.py
-│   └── session.py
+│ ├── base.py
+│ └── session.py
 ├── models/
-│   ├── user.py
-│   ├── photo.py
-│   ├── tag.py
-│   ├── comment.py
-│   ├── rating.py
-│   └── transformed_link.py
+│ ├── user.py
+│ ├── photo.py
+│ ├── tag.py
+│ ├── comment.py
+│ ├── rating.py
+│ └── transformed_link.py
 ├── api/
-│   ├── auth.py
-│   ├── users.py
-│   ├── photos.py
-│   ├── comments.py
-│   ├── ratings.py
-│   └── tags.py
+│ ├── auth.py
+│ ├── users.py
+│ ├── photos.py
+│ ├── comments.py
+│ ├── ratings.py
+│ └── tags.py
 ├── services/
-│   ├── cloudinary_service.py
-│   ├── qr_service.py
-│   ├── rating_service.py
-│   └── user_service.py
+│ ├── cloudinary_service.py
+│ ├── qr_service.py
+│ ├── rating_service.py
+│ └── user_service.py
 ├── deps/
-│   └── auth_deps.py
+│ └── auth_deps.py
 ├── schemas/
-│   ├── user.py
-│   ├── photo.py
-│   ├── tag.py
-│   ├── comment.py
-│   └── rating.py
+│ ├── user.py
+│ ├── photo.py
+│ ├── tag.py
+│ ├── comment.py
+│ └── rating.py
 ├── tests/
-│   ├── test_auth.py
-│   ├── test_users.py
-│   ├── test_photos.py
-│   ├── test_comments.py
-│   └── test_ratings.py
+│ ├── test_auth.py
+│ ├── test_users.py
+│ ├── test_photos.py
+│ ├── test_comments.py
+│ └── test_ratings.py
 └── utils/
-    └── slugify.py
+└── slugify.py
 
 🔹 Файли по модулях
 app/main.py
@@ -387,26 +387,28 @@ app/tests/test_ratings.py
 
 Тестує виставлення рейтингу, обмеження “1 раз на користувача”, середнє значення.
 
-
-
 ### Як запустити додаток:
 
 Створюємо віртуальне середовище.
 
 python3 -m venv .venv
-source .venv/bin/activate   # для Linux / Mac
+source .venv/bin/activate # для Linux / Mac
 
 # або
-.venv\Scripts\activate      # для Windows PowerShell
+
+.venv\Scripts\activate # для Windows PowerShell
 
 Встановлюємо бібліотеки
 pip install -r requirements.txt
 
 # Запусти контейнер
+
 docker-compose up -d --build
 docker ps
 
 docker-compose logs -f web
+
+docker-compose down --- для перезапуску видаляємо старі контейнера
 
 Коли попрацювали і зробили якісь зміни і нам треба зробити PR то ми виконуємо крок покрокові:
 
@@ -415,8 +417,7 @@ docker-compose logs -f web
 3. git push
 4. git push origin (назва вашої гілки)
 5. Переходимо на гілку девелопер
-git checkout developer
+   git checkout developer
 6. git merge --no-ff (назва вашої гілки) -m '...(Короткий опис PR)'
 7. git push origin developer
 8. Виходимо віртуального середовища за допомогою команди: deactivate
-
