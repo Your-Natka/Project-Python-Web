@@ -1,0 +1,69 @@
+# === Python ===
+__pycache__/
+*.py[cod]
+*$py.class
+
+# === Virtual environments ===
+.venv/
+venv/
+env/
+ENV/
+Pipfile.lock
+
+# === Distribution / packaging ===
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# === Unit test / coverage reports ===
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+
+# === Jupyter Notebooks ===
+.ipynb_checkpoints
+
+# === IDEs and editors ===
+.vscode/
+.idea/
+*.swp
+*.swo
+*.bak
+
+# === Environment files ===
+.env
+.env.*
+*.env
+
+# === Docker ===
+*.pid
+*.log
+docker-compose.override.yml
+
+# === Migrations ===
+migrations/
+alembic/
+
+# === Misc ===
+.DS_Store
+Thumbs.db
+
