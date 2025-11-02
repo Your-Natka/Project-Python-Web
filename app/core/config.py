@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings
 import cloudinary
+from typing import ClassVar
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "My FastAPI Project"
@@ -11,7 +12,7 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "supersecretkey"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 1 day
-    CLOUDINARY_URL="cloudinary://API_KEY:API_SECRET@CLOUD_NAME"
+    CLOUDINARY_URL: ClassVar[str] = "cloudinary://API_KEY:API_SECRET@CLOUD_NAME"
 
 
     class Config:
