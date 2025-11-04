@@ -1,15 +1,35 @@
-from pydantic import BaseModel
-from typing import Optional
+from sqlalchemy.orm import Session
+from app.models.tag import Tag          
+from app.schemas import TagCreate
+from typing import List, Optional
 
-class TagBase(BaseModel):
-    name: str
+def get_tag(db: Session, tag_id: int) -> Optional[Tag]:
+    return db.query(Tag).filter(Tag.id == tag_id).first()
 
-class TagCreate(TagBase):
-    pass  
+def get_tag_by_name(db: Session, name: str) -> Optional[Tag]:
+    return db.query(Tag).filter(Tag.name == name).first()
 
+def get_tags(db: Session, skip: int = 0, limit: int = 100) -> List[Tag]:
+    return db.query(Tag).offset(skip).limit(limit).all()
 
-class TagOut(TagBase):
-    id: int
+def create_tag(db: Session, tag: TagCreate) -> Tag:
+    db_tag = Tag(name=tag.name)
+    db.add(db_tag)
+    db.commit()
+    db.refresh(db_tag)
+    return db_tag
 
-    class Config:
-        from_attributes = True
+def delete_tag(db: Session, tag_id: int) -> Optional[Tag]:
+    tag = get_tag(db, tag_id)
+    if tag:
+        db.delete(tag)
+        db.commit()
+    return tag
+
+def update_tag(db: Session, tag_id: int, new_name: str) -> Optional[Tag]:
+    tag = get_tag(db, tag_id)
+    if tag:
+        tag.name = new_name
+        db.commit()
+        db.refresh(tag)
+    return tag

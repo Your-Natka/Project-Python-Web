@@ -1,9 +1,7 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Text, func
 from sqlalchemy.orm import relationship
 from app.db.base import Base
-from app.models.tag import photo_tags  
-
-
+from app.models.association import photo_tags
 
 class Photo(Base):
     __tablename__ = "photos"
@@ -17,7 +15,6 @@ class Photo(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
-
     # Відношення з юзером
     owner = relationship("User", back_populates="photos")
 
@@ -29,7 +26,7 @@ class Photo(Base):
         cascade="all"
     )
 
-    # Відношення з коментарями та рейтингами (Dev 4)
+    # Відношення з коментарями та рейтингами
     comments = relationship(
         "Comment",
         back_populates="photo",
@@ -41,12 +38,12 @@ class Photo(Base):
         cascade="all, delete-orphan"
     )
 
-    # Відношення з трансф-ним посиланнями
+    # Відношення з трансф-ними посиланнями
     transformed_links = relationship(
         "TransformedLink",
         back_populates="photo",
         cascade="all, delete-orphan"
     )
 
-    def __repr__(self): # -> об'єкт 
+    def __repr__(self):
         return f"Photo(id={self.id}, owner_id={self.owner_id}, slug={self.unique_slug})"

@@ -6,8 +6,6 @@ from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, JSON, func
 from sqlalchemy.orm import relationship
 from app.db.base import Base
 
-
-
 class TransformedLink(Base):
     __tablename__ = "transformed_links"
 
@@ -21,9 +19,7 @@ class TransformedLink(Base):
 
     # Зв’язки
     photo = relationship("Photo", back_populates="transformed_links")
-    creator = relationship("User") # ? треба?
+    creator = relationship("User", foreign_keys=[created_by])
 
-    def __repr__(self): # -> об'єкт 
-        return f"TransformedLink(photo_id={self.photo_id}, url={self.url})"
-    
-    
+    def __repr__(self):
+        return f"TransformedLink(id={self.id}, photo_id={self.photo_id}, url={self.url})"
