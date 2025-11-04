@@ -1,24 +1,30 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, status, UploadFile, File
+from fastapi import (
+    APIRouter, Depends, HTTPException, Query, status, UploadFile, File
+)
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
-from typing import Optional, Dict, Any, List
+from typing import Optional, List
+
 from app.db.session import get_db
-from app.models.photo import Photo
-from app.models.transformed_link import TransformedLink
-from app.schemas.photo import PhotoTransformOut
-from app.services import cloudinary_service, qr_services
 from app.deps import get_current_user, require_role
 from app.schemas.photo import PhotoCreate, PhotoOut, PhotoUpdate, PhotoTransformOut
 from app.crud import photo as crud_photo
-from app.services import cloudinary_service, qr_services
+from app.services import cloudinary_service
 
-router = APIRouter()
+router = APIRouter(prefix="/api/photos", tags=["Photos"])
 
-# POST /photos/ - завантажити фото
-@router.post("/", response_model=PhotoOut)
-async def upload_photo(file: UploadFile = File(...), photo_in: PhotoCreate = Depends(), db: AsyncSession = Depends(get_db),
-    current_user = Depends(get_current_user)):
 
+# ------------------- UPLOAD PHOTO -------------------
+@router.post("/upload", response_model=PhotoOut)
+async def upload_photo(
+    file: UploadFile = File(...),
+    photo_in: PhotoCreate = Depends(),
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    """
+    Завантажити нове фото.  
+    Дозволено лише автентифікованим користувачам.
+    """
     try:
         cloudinary_data = cloudinary_service.upload_image(file.file)
         photo = await crud_photo.create_photo(
@@ -33,49 +39,58 @@ async def upload_photo(file: UploadFile = File(...), photo_in: PhotoCreate = Dep
         raise HTTPException(status_code=400, detail=str(e))
 
 
-# GET /photos/{slug} - отримати фото за slug
-@router.get("/{slug}", response_model=PhotoOut)
-async def get_photo(slug: str, db: AsyncSession = Depends(get_db)):
-    photo = crud_photo.get_photo_by_slug(db, slug)
+# ------------------- GET PHOTO BY ID -------------------
+@router.get("/{photo_id}", response_model=PhotoOut)
+async def get_photo(photo_id: int, db: AsyncSession = Depends(get_db)):
+    """
+    Отримати фото за ID.
+    """
+    photo = await crud_photo.get_photo_by_id(db, photo_id)
     if not photo:
         raise HTTPException(status_code=404, detail="Photo not found")
     return photo
 
 
-# PUT /photos/{id} - редагувати опис та теги
+# ------------------- UPDATE PHOTO -------------------
 @router.put("/{photo_id}", response_model=PhotoOut)
 async def update_photo(
     photo_id: int,
     photo_in: PhotoUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user = Depends(get_current_user)
+    current_user=Depends(get_current_user)
 ):
+    """
+    Оновити опис чи теги власного фото.
+    """
     photo = await crud_photo.get_photo_by_id(db, photo_id)
     if not photo:
         raise HTTPException(status_code=404, detail="Photo not found")
+
     if photo.owner_id != current_user.user_id:
         raise HTTPException(status_code=403, detail="Not allowed to edit this photo")
 
-    updated_photo = await crud_photo.update_photo(
+    return await crud_photo.update_photo(
         db=db,
         photo=photo,
         description=photo_in.description,
         tag_names=photo_in.tags
     )
-    return updated_photo
 
 
-
-# DELETE /photos/{id} - видалити фото
+# ------------------- DELETE PHOTO -------------------
 @router.delete("/{photo_id}")
 async def delete_photo(
     photo_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user = Depends(get_current_user)
+    current_user=Depends(get_current_user)
 ):
+    """
+    Видалити власне фото.
+    """
     photo = await crud_photo.get_photo_by_id(db, photo_id)
     if not photo:
         raise HTTPException(status_code=404, detail="Photo not found")
+
     if photo.owner_id != current_user.user_id:
         raise HTTPException(status_code=403, detail="Not allowed to delete this photo")
 
@@ -84,20 +99,20 @@ async def delete_photo(
     return {"detail": "Photo deleted successfully"}
 
 
-# POST /photos/{id}/transform - трансформація + QR
-@router.post(
-    "/{photo_id}/transform", # "/photos/{photo_id}/transform" ???????
-    response_model=PhotoTransformOut,
-    status_code=status.HTTP_201_CREATED,
-)
+# ------------------- TRANSFORM PHOTO -------------------
+@router.post("/transform", response_model=PhotoTransformOut, status_code=status.HTTP_201_CREATED)
 async def transform_photo(
-    photo_id: int,
+    photo_id: int = Query(..., description="ID фото, яке потрібно трансформувати"),
     width: Optional[int] = Query(None),
     height: Optional[int] = Query(None),
     db: AsyncSession = Depends(get_db),
-    current_user = Depends(require_role("user")),
+    current_user=Depends(require_role("user"))
 ):
-    photo =await crud_photo.get_photo_by_id(db, photo_id)
+    """
+    Виконати трансформацію фото (Cloudinary)  
+    і створити QR-код для нового посилання.
+    """
+    photo = await crud_photo.get_photo_by_id(db, photo_id)
     if not photo:
         raise HTTPException(status_code=404, detail="Photo not found")
 
@@ -110,21 +125,20 @@ async def transform_photo(
     )
 
     return PhotoTransformOut(
-        url=new_link.url, # type: ignore
-        qr_code_url=new_link.qr_code_url, # type: ignore
-        transformation_params=new_link.transformation_params # type: ignore
+        url=new_link.url,  # type: ignore
+        qr_code_url=new_link.qr_code_url,  # type: ignore
+        transformation_params=new_link.transformation_params  # type: ignore
     )
 
 
-# GET /photos/search - пошук і фільтрація
+# ------------------- SEARCH -------------------
 @router.get("/search", response_model=List[PhotoOut])
 async def search_photos(
     keyword: Optional[str] = Query(None),
     tag: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db)
 ):
-    photos = await crud_photo.search_photos(db, keyword=keyword, tag_name=tag)
-    return photos
-
-
-
+    """
+    Пошук фото за ключовим словом або тегом.
+    """
+    return await crud_photo.search_photos(db, keyword=keyword, tag_name=tag)

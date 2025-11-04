@@ -5,6 +5,7 @@ from jose import jwt, JWTError
 from pydantic import BaseModel
 import os
 from app.models import User
+from app.services.redis_service import is_blacklisted
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
 
@@ -19,15 +20,18 @@ class TokenData(BaseModel):
 async def get_current_user(token: str = Depends(oauth2_scheme)):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        jti = payload.get("jti")
+        if await is_blacklisted(jti):
+            raise HTTPException(status_code=401, detail="Token has been revoked")
+
         data = TokenData(
             user_id=payload.get("sub"),
             role=payload.get("role"),
-            jti=payload.get("jti")
+            jti=jti
         )
     except JWTError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
-    # TODO: check in DB user exists and is_active
-    # TODO: check jti not in blacklist (Redis)
+        raise HTTPException(status_code=401, detail="Invalid token")
+
     return data
 
 def require_role(min_role: str):
