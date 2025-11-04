@@ -1,13 +1,10 @@
 from pydantic import BaseModel, EmailStr, Field
 from datetime import datetime
 
-
 # ---------------- USERS ----------------
-
 class UserCreate(BaseModel):
     email: EmailStr
     password: str
-
 
 class UserRead(BaseModel):
     id: int
@@ -18,26 +15,21 @@ class UserRead(BaseModel):
     class Config:
         from_attributes = True
 
-
 # ---------------- COMMENTS ----------------
-
 class CommentBase(BaseModel):
-    """Базовая модель для комментариев."""
-    content: str = Field(..., min_length=1, max_length=500, description="Текст комментария")
-
+    """Базова модель для коментарів."""
+    content: str = Field(..., min_length=1, max_length=500, description="Текст коментаря")
 
 class CommentCreate(CommentBase):
-    """Модель для создания нового комментария."""
-    photo_id: int = Field(..., description="ID фотографии, к которой добавляется комментарий")
-
+    """Модель для створення нового коментаря."""
+    photo_id: int = Field(..., description="ID фотографії, до якої додається коментар")
 
 class CommentUpdate(BaseModel):
-    """Модель для обновления комментария."""
-    content: str = Field(..., min_length=1, max_length=500, description="Обновлённый текст комментария")
-
+    """Модель для оновлення коментаря."""
+    content: str = Field(..., min_length=1, max_length=500, description="Оновлений текст коментаря")
 
 class CommentInDBBase(CommentBase):
-    """Базовая модель комментария из БД."""
+    """Базова модель коментаря з БД."""
     id: int
     user_id: int
     photo_id: int
@@ -47,31 +39,25 @@ class CommentInDBBase(CommentBase):
     class Config:
         from_attributes = True
 
-
 class CommentResponse(CommentInDBBase):
-    """Модель ответа для API."""
+    """Модель відповіді для API."""
     username: str | None = None
 
-
 # ---------------- RATINGS ----------------
-
 class RatingBase(BaseModel):
-    """Базовая модель рейтинга."""
-    value: int = Field(..., ge=1, le=5, description="Оценка от 1 до 5")
-
+    """Базова модель рейтингу."""
+    value: int = Field(..., ge=1, le=5, description="Оцінка від 1 до 5")
 
 class RatingCreate(RatingBase):
-    """Модель для создания нового рейтинга."""
-    photo_id: int = Field(..., description="ID фотографии, которую оценивают")
-
+    """Модель для створення нового рейтингу."""
+    photo_id: int = Field(..., description="ID фотографії, яку оцінюють")
 
 class RatingUpdate(BaseModel):
-    """Модель для обновления рейтинга."""
-    value: int = Field(..., ge=1, le=5, description="Обновлённое значение рейтинга")
-
+    """Модель для оновлення рейтингу."""
+    value: int = Field(..., ge=1, le=5, description="Оновлене значення рейтингу")
 
 class RatingInDBBase(RatingBase):
-    """Базовая модель рейтинга из БД."""
+    """Базова модель рейтингу з БД."""
     id: int
     user_id: int
     photo_id: int
@@ -79,7 +65,6 @@ class RatingInDBBase(RatingBase):
     class Config:
         from_attributes = True
 
-
 class RatingResponse(RatingInDBBase):
-    """Модель ответа для API рейтинга."""
+    """Модель відповіді для API рейтингу."""
     average_rating: float | None = None

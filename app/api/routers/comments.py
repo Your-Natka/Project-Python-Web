@@ -1,22 +1,11 @@
-from fastapi import APIRouter
-
-router = APIRouter()
-
-@router.post("/")
-async def create_comment():
-    return {"message": "Comment created"}
-
-@router.get("/")
-async def get_comments():
-    return {"message": "List of comments"}
- 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.schemas.comment import CommentCreate, CommentUpdate, CommentResponse
 from app.crud import comment as crud_comment
-from app.deps.auth_deps import get_current_user
+from app.deps import get_current_user  # Виправлено
 from app.db.session import get_db
 
+# Одне визначення router
 router = APIRouter(prefix="/comments", tags=["Comments"])
 
 @router.post("/", response_model=CommentResponse)
@@ -33,4 +22,3 @@ def update_comment(comment_id: int, comment_in: CommentUpdate, db: Session = Dep
 @router.get("/photo/{photo_id}", response_model=list[CommentResponse])
 def get_comments(photo_id: int, db: Session = Depends(get_db)):
     return crud_comment.get_comments_by_photo(db, photo_id)
-

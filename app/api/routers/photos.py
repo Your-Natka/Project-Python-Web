@@ -12,9 +12,7 @@ from app.schemas.photo import PhotoCreate, PhotoOut, PhotoUpdate, PhotoTransform
 from app.crud import photo as crud_photo
 from app.services import cloudinary_service, qr_services
 
-
 router = APIRouter()
-
 
 # POST /photos/ - завантажити фото
 @router.post("/", response_model=PhotoOut)

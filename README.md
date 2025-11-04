@@ -392,23 +392,23 @@ app/tests/test_ratings.py
 Створюємо віртуальне середовище.
 
 python3 -m venv .venv
-source .venv/bin/activate # для Linux / Mac
+source .venv/bin/activate   # для Linux / Mac
 
 # або
 
-.venv\Scripts\activate # для Windows PowerShell
+.venv\Scripts\activate   # для Windows PowerShell
 
 Встановлюємо бібліотеки
 pip install -r requirements.txt
 
 # Запусти контейнер
-
+docker-compose down             --- для перезапуску видаляємо старі контейнера
 docker-compose up -d --build
 docker ps
 
 docker-compose logs -f web
 
-docker-compose down --- для перезапуску видаляємо старі контейнера
+
 
 Коли попрацювали і зробили якісь зміни і нам треба зробити PR то ми виконуємо крок покрокові:
 
