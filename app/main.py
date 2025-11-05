@@ -3,6 +3,7 @@ from app.api.routers import users, auth, photos, tags, comments, ratings
 from app.core.config import settings
 from app.db.session import engine
 from app.db.base import Base
+from app.api import search 
 
 # Створюємо всі таблиці (для dev)
 Base.metadata.create_all(bind=engine)
@@ -20,5 +21,5 @@ app.include_router(photos.router, prefix="/photos", tags=["Photos"])
 app.include_router(tags.router, prefix="/tags", tags=["Tags"])
 app.include_router(comments.router, prefix="/comments", tags=["Comments"])
 app.include_router(ratings.router, prefix="/ratings", tags=["Ratings"])
-
+app.include_router(search.router)
 
