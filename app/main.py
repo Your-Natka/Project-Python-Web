@@ -3,6 +3,7 @@ from app.api import users
 from app.core.config import settings
 from app.db.session import engine
 from app.db.base import Base
+from app.api import search 
 
 # Створюємо всі таблиці (для dev)
 Base.metadata.create_all(bind=engine)
@@ -11,7 +12,10 @@ app = FastAPI(title="My FastAPI Project")
 
 # Регіструємо роутери
 app.include_router(users.router, prefix="/users", tags=["Users"])
+app.include_router(search.router)
 
 @app.get("/")
 def read_root():
     return {"message": "Hello, FastAPI!"}
+
+
