@@ -1,1 +1,1 @@
-from . import users, auth, photos, tags, comments, ratings
+from app.api.routers import auth, users, photos, tags, comments, ratings

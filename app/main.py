@@ -10,10 +10,6 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="PhotoShare API")
 
-@app.get("/")
-def read_root():
-    return {"message": "Hello, PhotoShare API!"}
-
 # 🔗 Підключення роутерів
 app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
 app.include_router(users.router, prefix="/users", tags=["Users"])
@@ -23,3 +19,6 @@ app.include_router(comments.router, prefix="/comments", tags=["Comments"])
 app.include_router(ratings.router, prefix="/ratings", tags=["Ratings"])
 app.include_router(search.router)
 
+@app.get("/")
+def read_root():
+    return {"message": "Hello, PhotoShare API!"}
