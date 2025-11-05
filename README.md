@@ -386,3 +386,29 @@ app/tests/test_comments.py
 app/tests/test_ratings.py
 
 Тестує виставлення рейтингу, обмеження “1 раз на користувача”, середнє значення.
+
+Як запустити додаток:
+Створюємо віртуальне середовище.
+
+python3 -m venv .venv source .venv/bin/activate # для Linux / Mac
+
+або
+.venv\Scripts\activate # для Windows PowerShell
+
+Встановлюємо бібліотеки pip install -r requirements.txt
+
+Запусти контейнер
+docker-compose down --- для перезапуску видаляємо старі контейнера docker-compose up -d --build docker ps
+
+docker-compose logs -f web
+
+Коли попрацювали і зробили якісь зміни і нам треба зробити PR то ми виконуємо крок покрокові:
+
+git add .
+git commit -m '...(Тут буде назва вашого коментаря)'
+git push
+git push origin (назва вашої гілки)
+Переходимо на гілку девелопер git checkout developer
+git merge --no-ff (назва вашої гілки) -m '...(Короткий опис PR)'
+git push origin developer
+Виходимо віртуального середовища за допомогою команди: deactivate
