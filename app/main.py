@@ -3,7 +3,7 @@ from app.api.routers import users, auth, photos, tags, comments, ratings
 from app.core.config import settings
 from app.db.session import engine
 from app.db.base import Base
-from app.api import search 
+from app.api.routers import search 
 
 # Створюємо всі таблиці (для dev)
 Base.metadata.create_all(bind=engine)
