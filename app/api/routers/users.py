@@ -31,7 +31,6 @@ async def login(user_in: UserLogin, db: Session = Depends(get_db)):
     """Авторизація користувача"""
     return login_user(db, user_in)
 
-
 @router.post(
     "/refresh_token",
     summary=users_description["refresh_token"]["summary"],

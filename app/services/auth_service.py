@@ -1,12 +1,14 @@
+from fastapi import HTTPException, status
 from datetime import datetime, timedelta
 from jose import jwt
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
-from app.models import User
+from app.models.user import User
 from app.schemas.user import UserCreate, UserLogin
 from app.core.config import settings
 from app.services.redis_service import add_to_blacklist
 from uuid import uuid4
+from app.core.security import verify_password, create_access_token
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -43,13 +45,22 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
-def login_user(db: Session, user_in: UserLogin):
-    user = authenticate_user(db, user_in.email, user_in.password)
-    if not user:
-        raise ValueError("Invalid credentials")
-    access_token = create_access_token({"sub": str(user.id), "role": user.role})
-    return {"access_token": access_token, "token_type": "bearer"}
+def login_user(db: Session, user_in):
+    """Логін через email або username"""
+    user = None
+    if user_in.email:
+        user = db.query(User).filter(User.email == user_in.email).first()
+    elif user_in.username:
+        user = db.query(User).filter(User.username == user_in.username).first()
 
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    if not verify_password(user_in.password, user.password):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect password")
+
+    access_token = create_access_token({"user_id": user.id, "role": user.role})
+    return {"access_token": access_token, "token_type": "bearer"}
 
 async def logout_user(jti: str):
     await add_to_blacklist(jti)

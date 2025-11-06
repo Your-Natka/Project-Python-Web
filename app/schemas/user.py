@@ -12,7 +12,8 @@ class UserCreate(UserBase):
 
 
 class UserLogin(BaseModel):
-    email: EmailStr
+    username: Optional[str] = None
+    email: Optional[EmailStr] = None
     password: str
 
 

@@ -407,6 +407,10 @@ docker-compose up -d --build
 docker ps
 
 docker-compose logs -f web
+ 
+# Запусти локально
+
+uvicorn app.main:app --reload
 
 # Перезапусти тести
 docker compose exec web pytest -q
