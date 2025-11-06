@@ -408,6 +408,8 @@ docker ps
 
 docker-compose logs -f web
 
+# Перезапусти тести
+docker compose exec web pytest -q
 
 Коли попрацювали і зробили якісь зміни і нам треба зробити PR то ми виконуємо крок покрокові:
 
