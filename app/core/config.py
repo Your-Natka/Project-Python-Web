@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings
+from fastapi.security import OAuth2PasswordBearer
 import cloudinary
 from typing import ClassVar
 import os
@@ -16,7 +17,10 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 1 day
     CLOUDINARY_URL: ClassVar[str] = "cloudinary://API_KEY:API_SECRET@CLOUD_NAME"
-
+    DATABASE_URL: str = "sqlite:///./test.db"
+    
+    # OAuth2 settings
+    oauth2_scheme: OAuth2PasswordBearer = OAuth2PasswordBearer(tokenUrl="token")
 
     class Config:
         env_file = ".env"

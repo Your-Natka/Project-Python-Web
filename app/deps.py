@@ -1,43 +1,35 @@
-# app/deps.py
 from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
-from jose import jwt, JWTError
-from pydantic import BaseModel
-import os
-from app.models import User
-from app.services.redis_service import is_blacklisted
+from jose import JWTError, jwt
+from app.core.config import settings
+from app.models.user import User, Role
+from app.db.session import get_db
+from sqlalchemy.orm import Session
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
-
-SECRET_KEY = os.getenv("SECRET_KEY", "supersecret")
-ALGORITHM = "HS256"
-
-class TokenData(BaseModel):
-    user_id: str
-    role: str
-    jti: str
-
-async def get_current_user(token: str = Depends(oauth2_scheme)):
+def get_current_user(token: str = Depends(settings.oauth2_scheme), db: Session = Depends(get_db)):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+    )
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        jti = payload.get("jti")
-        if await is_blacklisted(jti):
-            raise HTTPException(status_code=401, detail="Token has been revoked")
-
-        data = TokenData(
-            user_id=payload.get("sub"),
-            role=payload.get("role"),
-            jti=jti
-        )
+        payload = jwt.decode(token, settings.JWT_SECRET, algorithms=["HS256"])
+        email: str = payload.get("sub")
+        if email is None:
+            raise credentials_exception
     except JWTError:
-        raise HTTPException(status_code=401, detail="Invalid token")
+        raise credentials_exception
 
-    return data
+    user = db.query(User).filter(User.email == email).first()
+    if user is None or not user.is_active:
+        raise credentials_exception
+    return user
 
-def require_role(min_role: str):
-    roles = {"user": 1, "moderator": 2, "admin": 3}
-    def role_dependency(current: TokenData = Depends(get_current_user)):
-        if roles[current.role] < roles[min_role]:
-            raise HTTPException(status_code=403, detail="Not enough permissions")
-        return current
-    return role_dependency
+
+def require_role(required_role: Role):
+    def role_checker(current_user: User = Depends(get_current_user)):
+        if current_user.role != required_role and current_user.role != Role.admin:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Operation allowed only for role: {required_role}",
+            )
+        return current_user
+    return role_checker

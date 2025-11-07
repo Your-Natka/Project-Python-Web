@@ -1,12 +1,12 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Header
 from sqlalchemy.orm import Session
-from app.docs.descriptions import users_description  # ✅ додано
+from app.docs.descriptions import users_description
 from app.schemas.user import UserCreate, UserLogin, UserResponse
-from app.services.auth_service import (
-    create_user, login_user, refresh_token, request_mail, verify_mail, logout_user
-)
 from app.deps import require_role
 from app.db.session import get_db
+from app.services.auth_service import AuthService  
+
+auth_service = AuthService()
 
 router = APIRouter(prefix="/api/users", tags=["Users"])
 
@@ -19,7 +19,7 @@ router = APIRouter(prefix="/api/users", tags=["Users"])
 )
 async def signup(user_in: UserCreate, db: Session = Depends(get_db)):
     """Реєстрація нового користувача"""
-    return create_user(db, user_in)
+    return await auth_service.register_user(db=db, user_in=user_in)
 
 
 @router.post(
@@ -29,7 +29,8 @@ async def signup(user_in: UserCreate, db: Session = Depends(get_db)):
 )
 async def login(user_in: UserLogin, db: Session = Depends(get_db)):
     """Авторизація користувача"""
-    return login_user(db, user_in)
+    return await auth_service.login_user(db=db, user_in=user_in)
+
 
 @router.post(
     "/refresh_token",
@@ -38,7 +39,7 @@ async def login(user_in: UserLogin, db: Session = Depends(get_db)):
 )
 async def refresh(token: str):
     """Оновлення access токена"""
-    return await refresh_token(token)
+    return await auth_service.refresh_token(token)
 
 
 @router.post(
@@ -48,7 +49,7 @@ async def refresh(token: str):
 )
 async def send_mail_request(email: str):
     """Надіслати лист для верифікації"""
-    return await request_mail(email)
+    return await auth_service.request_mail(email)
 
 
 @router.get(
@@ -58,7 +59,7 @@ async def send_mail_request(email: str):
 )
 async def confirm_mail(token: str):
     """Підтвердити email через токен"""
-    return await verify_mail(token)
+    return await auth_service.verify_mail(db, token)
 
 
 @router.get(
@@ -88,6 +89,7 @@ async def get_moderators():
     summary=users_description["logout"]["summary"],
     description=users_description["logout"]["description"]
 )
-async def logout(jti: str):
+async def logout(authorization: str = Header(...)):
     """Вихід користувача (деактивація токена)"""
-    return await logout_user(jti)
+    token = authorization.split(" ")[1]  # Bearer <token>
+    return await auth_service.logout_user(token)

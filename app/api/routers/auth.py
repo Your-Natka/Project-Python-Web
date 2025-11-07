@@ -1,20 +1,33 @@
-from fastapi import APIRouter, Depends, status
-from app.deps import get_current_user
-from app.services.redis_service import add_to_blacklist
-from app.docs.descriptions import auth_description  # ✅ додаємо імпорт опису
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
 
-router = APIRouter(prefix="/api/auth", tags=["Authentication"])
+from app.schemas.user import UserCreate, UserLogin, UserResponse, Token
+from app.services.auth_service import auth_service
+from app.db.session import get_db
 
-@router.post(
-    "/logout",
-    summary=auth_description["logout"]["summary"],
-    description=auth_description["logout"]["description"],
-    status_code=status.HTTP_200_OK
-)
-async def logout(current_user=Depends(get_current_user)):
+router = APIRouter(prefix="/auth", tags=["Auth"])
+
+
+@router.post("/signup", response_model=UserResponse, status_code=201)
+async def signup(user_data: UserCreate, db: Session = Depends(get_db)):
     """
-    Завершення сеансу користувача.  
-    Додає поточний JWT токен у чорний список Redis.
+    Реєстрація нового користувача.
+    Перший користувач отримує роль 'admin'.
     """
-    await add_to_blacklist(current_user.jti)
-    return {"detail": "Successfully logged out"}
+    return await auth_service.register_user(db, user_data)
+
+
+@router.post("/login", response_model=Token)
+async def login(login_data: UserLogin, db: Session = Depends(get_db)):
+    """
+    Логін користувача. Повертає JWT токен.
+    """
+    return await auth_service.login_user(db, login_data)
+
+
+@router.get("/verify/{token}")
+async def verify_email(token: str, db: Session = Depends(get_db)):
+    """
+    Підтвердження email користувача за токеном.
+    """
+    return await auth_service.verify_mail(db, token)

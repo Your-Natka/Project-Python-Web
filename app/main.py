@@ -11,7 +11,7 @@ Base.metadata.create_all(bind=engine)
 app = FastAPI(title="PhotoShare API")
 
 # 🔗 Підключення роутерів
-app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
+# app.include_router(auth.router, prefix="/auth", tags=["Auth"])
 app.include_router(users.router, prefix="/users", tags=["Users"])
 app.include_router(photos.router, prefix="/photos", tags=["Photos"])
 app.include_router(tags.router, prefix="/tags", tags=["Tags"])

@@ -1,85 +1,129 @@
-from fastapi import HTTPException, status
 from datetime import datetime, timedelta
-from jose import jwt
+from uuid import uuid4
+from fastapi import HTTPException
+from jose import jwt, JWTError
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
+
 from app.models.user import User
-from app.schemas.user import UserCreate, UserLogin
+from app.schemas.user import UserCreate, UserLogin, UserResponse
 from app.core.config import settings
-from app.services.redis_service import add_to_blacklist
-from uuid import uuid4
-from app.core.security import verify_password, create_access_token
+from app.utils.mailer import send_verification_email
+
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-SECRET_KEY = settings.SECRET_KEY
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
+class AuthService:
+    def __init__(self):
+        self.SECRET_KEY = settings.SECRET_KEY
+        self.ALGORITHM = "HS256"
+        self.ACCESS_TOKEN_EXPIRE_MINUTES = 30
+        self.REFRESH_TOKEN_EXPIRE_DAYS = 7
+        self.blacklist = set()
 
-def create_user(db: Session, user_in: UserCreate):
-    user = User(
-        email=user_in.email,
-        username=user_in.username,
-        password=pwd_context.hash(user_in.password),
-        role="user"
-    )
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-    return user
+    # ==========================================================
+    # 1️⃣ Реєстрація користувача
+    # ==========================================================
+    async def register_user(self, db: Session, user_in: UserCreate):
+        existing = db.query(User).filter(User.email == user_in.email).first()
+        if existing:
+            raise HTTPException(status_code=400, detail="Користувач з таким email вже існує")
 
+        # перший користувач у системі → admin
+        count_users = db.query(User).count()
+        role = "admin" if count_users == 0 else "user"
 
-def authenticate_user(db: Session, email: str, password: str):
-    user = db.query(User).filter(User.email == email).first()
-    if not user or not pwd_context.verify(password, user.password):
-        return None
-    return user
+        hashed_password = pwd_context.hash(user_in.password)
+        user = User(
+            username=user_in.username,
+            email=user_in.email,
+            hashed_password=hashed_password,
+            role=role,
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
 
+        token = self._create_email_token(user.email)
+        await send_verification_email(user.email, token)
 
-def create_access_token(data: dict, expires_delta: timedelta | None = None):
-    to_encode = data.copy()
-    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
-    jti = str(uuid4())
-    to_encode.update({"exp": expire, "jti": jti})
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+        return UserResponse.from_orm(user)
 
-
-def login_user(db: Session, user_in):
-    """Логін через email або username"""
-    user = None
-    if user_in.email:
+    # ==========================================================
+    # 2️⃣ Логін користувача
+    # ==========================================================
+    async def login_user(self, db: Session, user_in: UserLogin):
         user = db.query(User).filter(User.email == user_in.email).first()
-    elif user_in.username:
-        user = db.query(User).filter(User.username == user_in.username).first()
+        if not user or not pwd_context.verify(user_in.password, user.hashed_password):
+            raise HTTPException(status_code=401, detail="Невірний email або пароль")
 
-    if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        access_token = self._create_access_token({"sub": user.email})
+        refresh_token = self._create_refresh_token({"sub": user.email})
 
-    if not verify_password(user_in.password, user.password):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect password")
+        return {
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "token_type": "bearer"
+        }
 
-    access_token = create_access_token({"user_id": user.id, "role": user.role})
-    return {"access_token": access_token, "token_type": "bearer"}
+    # ==========================================================
+    # 3️⃣ Оновлення токена
+    # ==========================================================
+    async def refresh_token(self, token: str):
+        try:
+            payload = jwt.decode(token, self.SECRET_KEY, algorithms=[self.ALGORITHM])
+            email = payload.get("sub")
+        except JWTError:
+            raise HTTPException(status_code=401, detail="Недійсний refresh токен")
 
-async def logout_user(jti: str):
-    await add_to_blacklist(jti)
-    return {"msg": "Successfully logged out"}
+        new_access_token = self._create_access_token({"sub": email})
+        return {"access_token": new_access_token, "token_type": "bearer"}
 
-# --- 🔹 ДОДАНО: заглушки для відсутніх функцій --- #
-async def refresh_token(token: str):
-    # TODO: реалізувати перевипуск токену
-    return {"msg": "Token refreshed (placeholder)"}
+    # ==========================================================
+    # 4️⃣ Підтвердження email
+    # ==========================================================
+    async def verify_mail(self, db: Session, token: str):
+        try:
+            payload = jwt.decode(token, self.SECRET_KEY, algorithms=[self.ALGORITHM])
+            email = payload.get("sub")
+        except JWTError:
+            raise HTTPException(status_code=400, detail="Недійсний або прострочений токен")
+
+        user = db.query(User).filter(User.email == email).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="Користувача не знайдено")
+
+        user.is_verified = True
+        db.commit()
+        return {"message": "Email успішно підтверджено"}
+
+    # ==========================================================
+    # 5️⃣ Вихід користувача (logout)
+    # ==========================================================
+    async def logout_user(self, jti: str):
+        self.blacklist.add(jti)
+        return {"message": "Користувача успішно вийшов з системи"}
+
+    # ==========================================================
+    # 🔒 Приватні допоміжні методи
+    # ==========================================================
+    def _create_access_token(self, data: dict):
+        to_encode = data.copy()
+        expire = datetime.utcnow() + timedelta(minutes=self.ACCESS_TOKEN_EXPIRE_MINUTES)
+        to_encode.update({"exp": expire, "jti": str(uuid4())})
+        return jwt.encode(to_encode, self.SECRET_KEY, algorithm=self.ALGORITHM)
+
+    def _create_refresh_token(self, data: dict):
+        to_encode = data.copy()
+        expire = datetime.utcnow() + timedelta(days=self.REFRESH_TOKEN_EXPIRE_DAYS)
+        to_encode.update({"exp": expire, "jti": str(uuid4())})
+        return jwt.encode(to_encode, self.SECRET_KEY, algorithm=self.ALGORITHM)
+
+    def _create_email_token(self, email: str):
+        expire = datetime.utcnow() + timedelta(hours=24)
+        data = {"sub": email, "exp": expire}
+        return jwt.encode(data, self.SECRET_KEY, algorithm=self.ALGORITHM)
 
 
-async def request_mail(email: str):
-    # TODO: реалізувати надсилання пошти з підтвердженням
-    return {"msg": f"Verification email sent to {email}"}
-
-
-async def verify_mail(token: str):
-    # TODO: реалізувати перевірку токена підтвердження пошти
-    return {"msg": f"Email verified for token {token}"}
-
-
-
+auth_service = AuthService()

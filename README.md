@@ -1,51 +1,7 @@
 # Project-Python-Web
 
 📁 Структура проєкту PhotoShare
-app/
-├── main.py
-├── core/
-│ ├── config.py
-│ └── security.py
-├── crud/
-│ ├── user.py
-├── db/
-│ ├── base.py
-│ └── session.py
-├── models/
-│ ├── user.py
-│ ├── photo.py
-│ ├── tag.py
-│ ├── comment.py
-│ ├── rating.py
-│ └── transformed_link.py
-├── api/
-│ ├── auth.py
-│ ├── users.py
-│ ├── photos.py
-│ ├── comments.py
-│ ├── ratings.py
-│ └── tags.py
-├── services/
-│ ├── cloudinary_service.py
-│ ├── qr_service.py
-│ ├── rating_service.py
-│ └── user_service.py
-├── deps/
-│ └── auth_deps.py
-├── schemas/
-│ ├── user.py
-│ ├── photo.py
-│ ├── tag.py
-│ ├── comment.py
-│ └── rating.py
-├── tests/
-│ ├── test_auth.py
-│ ├── test_users.py
-│ ├── test_photos.py
-│ ├── test_comments.py
-│ └── test_ratings.py
-└── utils/
-└── slugify.py
+
 
 🔹 Файли по модулях
 app/main.py
@@ -294,7 +250,7 @@ POST /photos/{id}/transform — створити трансформовану в
 
 GET /photos/search — пошук і фільтрація
 
-app/api/comments.py
+app/api/routers/comments.py
 
 Коментарі.
 
@@ -408,6 +364,7 @@ docker ps
 
 docker-compose logs -f web
  
+
 # Запусти локально
 
 uvicorn app.main:app --reload
