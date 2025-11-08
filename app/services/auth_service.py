@@ -38,6 +38,9 @@ class AuthService:
         user = User(
             username=user_in.username,
             email=user_in.email,
+            full_name=user_in.full_name,
+            bio=user_in.bio,
+            avatar_url=user_in.avatar_url,
             hashed_password=hashed_password,
             role=role,
         )
