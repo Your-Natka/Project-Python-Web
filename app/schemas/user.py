@@ -23,6 +23,7 @@ class UserBase(BaseModel):
 class UserCreate(BaseModel):
     email: EmailStr
     password: str
+    username: str
     full_name: str
     bio: Optional[str] = None
     avatar_url: Optional[str] = None

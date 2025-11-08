@@ -14,7 +14,7 @@ class User(Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
-    # username = Column(String(50), unique=True, nullable=False, index=True)
+    username = Column(String(50), unique=True, nullable=False, index=True)
     email = Column(String(120), unique=True, nullable=False, index=True)
     hashed_password = Column(String(255), nullable=False)
     full_name = Column(String(100), unique=True, nullable=False, index=True)
@@ -29,7 +29,8 @@ class User(Base):
     comments = relationship("Comment", back_populates="user", cascade="all, delete")
     ratings = relationship("Rating", back_populates="user", cascade="all, delete")
 
+    # def __repr__(self):
+        # return f"<User(username={self.username}, role={self.role}, active={self.is_active})>"
+
     def __repr__(self):
-        return f"<User(username={self.username}, role={self.role}, active={self.is_active})>"
-
-
+        return f"<User(email={self.email}, role={self.role}, active={self.is_active})>" # виправлений
