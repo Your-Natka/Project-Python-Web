@@ -20,7 +20,8 @@ def create_access_token(data: dict, expires_delta: timedelta = timedelta(hours=1
     to_encode = data.copy()
     expire = datetime.utcnow() + expires_delta
     to_encode.update({"exp": expire})
-    return jwt.encode(to_encode, settings.JWT_SECRET, algorithm=ALGORITHM)
+    # return jwt.encode(to_encode, settings.JWT_SECRET, algorithm=ALGORITHM)
+    return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=ALGORITHM)
 
 def get_password_hash(password: str) -> str:
     hashed = bcrypt.hashpw(password.encode('utf-8')[:72], bcrypt.gensalt())
