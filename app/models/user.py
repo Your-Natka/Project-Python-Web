@@ -23,7 +23,8 @@ class User(Base):
     role = Column(Enum(Role), default=Role.user, nullable=False)
     bio = Column(String(255), nullable=True)
     avatar_url = Column(String(255), nullable=True)
-
+    is_verified = Column(Boolean, default=False)
+    
     # relationships
     photos = relationship("Photo", back_populates="owner", cascade="all, delete")
     comments = relationship("Comment", back_populates="user", cascade="all, delete")
@@ -33,4 +34,5 @@ class User(Base):
         # return f"<User(username={self.username}, role={self.role}, active={self.is_active})>"
 
     def __repr__(self):
-        return f"<User(email={self.email}, role={self.role}, active={self.is_active})>" # виправлений
+        return f"<User(id={self.id}, email={self.email}, role={self.role}, active={self.is_active})>"
+

@@ -1,17 +1,20 @@
 from datetime import datetime, timedelta
 from uuid import uuid4
+import logging
+
 from fastapi import HTTPException
 from jose import jwt, JWTError
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
+import redis.asyncio as redis
 
 from app.models.user import User
 from app.schemas.user import UserCreate, UserLogin, UserResponse
 from app.core.config import settings
 from app.utils.mailer import send_verification_email
 
-
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+logger = logging.getLogger("auth")
 
 
 class AuthService:
@@ -20,20 +23,17 @@ class AuthService:
         self.ALGORITHM = "HS256"
         self.ACCESS_TOKEN_EXPIRE_MINUTES = 30
         self.REFRESH_TOKEN_EXPIRE_DAYS = 7
-        self.blacklist = set()
+        self.EMAIL_TOKEN_EXPIRE_HOURS = 24
 
-    # ==========================================================
-    # 1️⃣ Реєстрація користувача
-    # ==========================================================
+        # Redis для blacklist
+        self.redis = redis.from_url(settings.REDIS_URL, decode_responses=True)
+
+    # ==================== РЕЄСТРАЦІЯ ====================
     async def register_user(self, db: Session, user_in: UserCreate):
-        existing = db.query(User).filter(User.email == user_in.email).first()
-        if existing:
-            raise HTTPException(status_code=400, detail="Користувач з таким email вже існує")
+        if db.query(User).filter((User.email == user_in.email) | (User.username == user_in.username)).first():
+            raise HTTPException(status_code=400, detail="Email або username вже використовується")
 
-        # перший користувач у системі → admin
-        count_users = db.query(User).count()
-        role = "admin" if count_users == 0 else "user"
-
+        role = "admin" if db.query(User).count() == 0 else "user"
         hashed_password = pwd_context.hash(user_in.password)
         user = User(
             username=user_in.username,
@@ -48,44 +48,43 @@ class AuthService:
         db.commit()
         db.refresh(user)
 
-        token = self._create_email_token(user.email)
+        token = self._create_token(user.email, self.EMAIL_TOKEN_EXPIRE_HOURS, token_type="email")
         await send_verification_email(user.email, token)
+        logger.info(f"New user registered: {user.email}")
 
         return UserResponse.from_orm(user)
 
-    # ==========================================================
-    # 2️⃣ Логін користувача
-    # ==========================================================
+    # ==================== ЛОГІН ====================
     async def login_user(self, db: Session, user_in: UserLogin):
         user = db.query(User).filter(User.email == user_in.email).first()
         if not user or not pwd_context.verify(user_in.password, user.hashed_password):
             raise HTTPException(status_code=401, detail="Невірний email або пароль")
 
-        access_token = self._create_access_token({"sub": user.email})
-        refresh_token = self._create_refresh_token({"sub": user.email})
+        if not user.is_verified:
+            raise HTTPException(status_code=403, detail="Email не підтверджено")
 
-        return {
-            "access_token": access_token,
-            "refresh_token": refresh_token,
-            "token_type": "bearer"
-        }
+        access_token = self._create_token(user.email, self.ACCESS_TOKEN_EXPIRE_MINUTES, "access")
+        refresh_token = self._create_token(user.email, self.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60, "refresh")
+        logger.info(f"User logged in: {user.email}")
 
-    # ==========================================================
-    # 3️⃣ Оновлення токена
-    # ==========================================================
+        return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer"}
+
+    # ==================== ОНОВЛЕННЯ ТОКЕНА ====================
     async def refresh_token(self, token: str):
         try:
             payload = jwt.decode(token, self.SECRET_KEY, algorithms=[self.ALGORITHM])
             email = payload.get("sub")
+            jti = payload.get("jti")
+            if await self.redis.get(f"blacklist:{jti}"):
+                raise HTTPException(status_code=401, detail="Токен недійсний")
         except JWTError:
             raise HTTPException(status_code=401, detail="Недійсний refresh токен")
 
-        new_access_token = self._create_access_token({"sub": email})
+        new_access_token = self._create_token(email, self.ACCESS_TOKEN_EXPIRE_MINUTES, "access")
+        logger.info(f"Access token refreshed for: {email}")
         return {"access_token": new_access_token, "token_type": "bearer"}
 
-    # ==========================================================
-    # 4️⃣ Підтвердження email
-    # ==========================================================
+    # ==================== ПІДТВЕРДЖЕННЯ EMAIL ====================
     async def verify_mail(self, db: Session, token: str):
         try:
             payload = jwt.decode(token, self.SECRET_KEY, algorithms=[self.ALGORITHM])
@@ -99,34 +98,20 @@ class AuthService:
 
         user.is_verified = True
         db.commit()
+        logger.info(f"Email verified for: {email}")
         return {"message": "Email успішно підтверджено"}
 
-    # ==========================================================
-    # 5️⃣ Вихід користувача (logout)
-    # ==========================================================
-    async def logout_user(self, jti: str):
-        self.blacklist.add(jti)
+    # ==================== LOGOUT ====================
+    async def logout_user(self, jti: str, expire_seconds: int):
+        await self.redis.set(f"blacklist:{jti}", "true", ex=expire_seconds)
+        logger.info(f"Token blacklisted: {jti}")
         return {"message": "Користувача успішно вийшов з системи"}
 
-    # ==========================================================
-    # 🔒 Приватні допоміжні методи
-    # ==========================================================
-    def _create_access_token(self, data: dict):
-        to_encode = data.copy()
-        expire = datetime.utcnow() + timedelta(minutes=self.ACCESS_TOKEN_EXPIRE_MINUTES)
-        to_encode.update({"exp": expire, "jti": str(uuid4())})
-        return jwt.encode(to_encode, self.SECRET_KEY, algorithm=self.ALGORITHM)
-
-    def _create_refresh_token(self, data: dict):
-        to_encode = data.copy()
-        expire = datetime.utcnow() + timedelta(days=self.REFRESH_TOKEN_EXPIRE_DAYS)
-        to_encode.update({"exp": expire, "jti": str(uuid4())})
-        return jwt.encode(to_encode, self.SECRET_KEY, algorithm=self.ALGORITHM)
-
-    def _create_email_token(self, email: str):
-        expire = datetime.utcnow() + timedelta(hours=24)
-        data = {"sub": email, "exp": expire}
-        return jwt.encode(data, self.SECRET_KEY, algorithm=self.ALGORITHM)
+    # ==================== ПРИВАТНИЙ МЕТОД ДЛЯ ТОКЕНІВ ====================
+    def _create_token(self, email: str, expire_minutes: int, token_type: str):
+        expire = datetime.utcnow() + timedelta(minutes=expire_minutes)
+        payload = {"sub": email, "exp": expire, "jti": str(uuid4()), "type": token_type}
+        return jwt.encode(payload, self.SECRET_KEY, algorithm=self.ALGORITHM)
 
 
 auth_service = AuthService()
