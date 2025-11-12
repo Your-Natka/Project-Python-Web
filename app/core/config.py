@@ -16,7 +16,8 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "supersecretkey"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 1 day
-    CLOUDINARY_URL: ClassVar[str] = "cloudinary://API_KEY:API_SECRET@CLOUD_NAME"
+    # CLOUDINARY_URL: ClassVar[str] = "cloudinary://API_KEY:API_SECRET@CLOUD_NAME"
+    CLOUDINARY_URL: str
     DATABASE_URL: str = "sqlite:///./test.db"
     
     # OAuth2 settings
@@ -26,4 +27,6 @@ class Settings(BaseSettings):
         env_file = ".env"
         extra = "ignore"
 
-settings = Settings()
+settings = Settings() # type: ignore
+
+print("DEBUG: Loaded CLOUDINARY_URL =", repr(settings.CLOUDINARY_URL))

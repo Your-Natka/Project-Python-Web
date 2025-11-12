@@ -13,7 +13,8 @@ async def create_photo(db: AsyncSession,owner_id: int,cloudinary_data: dict,desc
     photo = Photo(
         owner_id=owner_id,
         cloudinary_public_id=cloudinary_data["public_id"],
-        cloudinary_url=cloudinary_data["url"],
+        # cloudinary_url=cloudinary_data["url"],
+        original_url=cloudinary_data["url"],
         description=description
     )
 

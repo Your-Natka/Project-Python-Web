@@ -4,11 +4,13 @@ services:
     command: uvicorn app.main:app --host 0.0.0.0 --port 8080 --reload
     ports:
       - "8080:8080"
-    environment:
-      - DATABASE_URL=postgresql+asyncpg://postgres:password@db:5432/photoshare
-      - REDIS_URL=redis://redis:6379/0
-      - CLOUDINARY_URL=cloudinary://API_KEY:API_SECRET@CLOUD_NAME
-      - SECRET_KEY=supersecret
+    env_file:
+    - .env
+    # environment:
+    #   - DATABASE_URL=postgresql+asyncpg://postgres:password@db:5432/photoshare
+    #   - REDIS_URL=redis://redis:6379/0
+    #   - CLOUDINARY_URL=cloudinary://API_KEY:API_SECRET@CLOUD_NAME
+    #   - SECRET_KEY=supersecret
     volumes:
       - ./:/app 
     depends_on:
